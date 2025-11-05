@@ -1,12 +1,13 @@
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
-# --- 1. Database Configuration (CHANGE THESE) ---
+# --- 1. Database Configuration ---
+# NOTE: Using the credentials you provided in your last turn.
 DB_CONFIG = {
     'host': 'localhost',
-    'user': 'root',   # <-- CHANGE ME
-    'password': 'Rohan@2005', # <-- CHANGE ME
-    'database': 'course_registration' # As defined in course_setup.sql
+    'user': 'root',
+    'password': 'Rohan@2005',
+    'database': 'course_registration'
 }
 
 app = Flask(__name__)
@@ -20,7 +21,8 @@ def get_db_connection():
         conn = mysql.connector.connect(**DB_CONFIG)
         return conn
     except mysql.connector.Error as err:
-        print(f"Database connection error: {err}")
+        # Print error details to console for debugging
+        print(f"Database connection error: {err}") 
         return None
 
 def fetch_data(query, params=None):
@@ -66,7 +68,7 @@ def execute_dml(query, params=None):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    """Simulated login/user selection page."""
+    """Simulated login/user selection page. (FIXED REDIRECT HERE)"""
     # Data from your data_entry.sql
     students = fetch_data("SELECT student_id, name FROM STUDENT;")
     faculty = fetch_data("SELECT faculty_id, name FROM FACULTY;")
@@ -75,16 +77,20 @@ def index():
         role = request.form.get('role')
         user_id = request.form.get('user_id')
         
+        if not user_id:
+             flash('Please select a user ID.', 'danger')
+             return redirect(url_for('index'))
+
         if role == 'student':
             session['user_id'] = int(user_id)
             session['role'] = 'student'
             return redirect(url_for('student_dashboard'))
+            
         elif role == 'faculty':
             session['user_id'] = int(user_id)
             session['role'] = 'faculty'
-            # In a real app, you'd route to a faculty dashboard
-            flash('Faculty dashboard not implemented in this minimal example.', 'warning')
-            return redirect(url_for('index'))
+            # --- CORRECTED REDIRECT TO FACULTY DASHBOARD ---
+            return redirect(url_for('faculty_dashboard'))
 
     return render_template('index.html', students=students, faculty=faculty)
 
@@ -104,7 +110,7 @@ def student_dashboard():
 
     student_id = session['user_id']
     
-    # Get total credits using your stored function
+    # Get total credits using your stored function (function1.sql)
     credits_data = fetch_data(f"SELECT total_credits({student_id}) AS total_credits;")
     total_credits = credits_data[0]['total_credits'] if credits_data else 0
 
@@ -118,7 +124,7 @@ def student_dashboard():
     """
     registered_courses = fetch_data(registered_courses_query, (student_id,))
 
-    # 2. Available Courses (Not currently registered in a future/current semester)
+    # 2. Available Courses (Not currently registered)
     available_courses_query = """
     SELECT 
         C.course_id, C.title, C.credits, F.name AS faculty_name, S.semester_name, O.max_capacity
@@ -134,7 +140,9 @@ def student_dashboard():
     available_courses = fetch_data(available_courses_query, (student_id,))
 
     # Get student name
-    student_name = fetch_data("SELECT name FROM STUDENT WHERE student_id = %s", (student_id,))[0]['name']
+    student_name = fetch_data("SELECT name FROM STUDENT WHERE student_id = %s", (student_id,))
+    student_name = student_name[0]['name'] if student_name else 'Unknown Student'
+
 
     return render_template(
         'student_dashboard.html', 
@@ -153,7 +161,7 @@ def register_course(course_id):
     
     student_id = session['user_id']
     
-    # 1. Find the relevant offering/semester (assuming for simplicity we use the first available offering/semester)
+    # 1. Find the relevant offering/semester 
     offering_data = fetch_data("""
     SELECT S.semester_name 
     FROM OFFERING O 
@@ -178,12 +186,92 @@ def register_course(course_id):
     if result == "Success":
         flash(f'Successfully registered for Course ID {course_id}. Date set by trigger.', 'success')
     elif 'Course is already full' in result:
-        # This catches the error message from the trigger!
+        # Catches the custom error message from the trigger!
         flash(f'Registration failed: {result}', 'danger')
     else:
         flash(f'Registration failed due to a database error: {result}', 'danger')
 
     return redirect(url_for('student_dashboard'))
+
+
+@app.route('/faculty/dashboard')
+def faculty_dashboard():
+    """Faculty Dashboard: View courses taught and enrolled students."""
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+
+    faculty_id = session['user_id']
+    
+    # Get faculty name
+    faculty_name = fetch_data("SELECT name FROM FACULTY WHERE faculty_id = %s", (faculty_id,))
+    faculty_name = faculty_name[0]['name'] if faculty_name else 'Unknown Faculty'
+
+    # Query to fetch all courses offered by the faculty and their students
+    enrolled_students_query = """
+    SELECT
+        C.title AS course_title,
+        O.section,
+        R.reg_id,
+        S.student_id,
+        S.name AS student_name,
+        R.semester,
+        R.grade
+    FROM OFFERING O
+    JOIN COURSE C ON O.course_id = C.course_id
+    LEFT JOIN REGISTRATION R ON C.course_id = R.course_id 
+    LEFT JOIN STUDENT S ON R.student_id = S.student_id
+    WHERE O.faculty_id = %s
+    ORDER BY C.title, S.name;
+    """
+    all_enrollments = fetch_data(enrolled_students_query, (faculty_id,))
+    
+    # Group results by course title for easier display in the template
+    courses_data = {}
+    for row in all_enrollments:
+        key = (row['course_title'], row['section'], row['semester'])
+        if key not in courses_data:
+            courses_data[key] = []
+        
+        # Only add student if they are actually registered (R.reg_id is not NULL)
+        if row['reg_id']:
+            courses_data[key].append({
+                'reg_id': row['reg_id'],
+                'student_id': row['student_id'],
+                'student_name': row['student_name'],
+                'grade': row['grade']
+            })
+
+    return render_template(
+        'faculty_dashboard.html', 
+        name=faculty_name,
+        courses_data=courses_data
+    )
+
+@app.route('/faculty/update_grade', methods=['POST'])
+def update_grade():
+    """Handles grade update (Faculty functionality)."""
+    if session.get('role') != 'faculty':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('index'))
+    
+    reg_id = request.form.get('reg_id')
+    new_grade = request.form.get('grade').strip()
+    
+    if not reg_id or not new_grade:
+        flash('Error: Missing registration ID or grade.', 'danger')
+        return redirect(url_for('faculty_dashboard'))
+    
+    # Execute the UPDATE DML
+    update_query = "UPDATE REGISTRATION SET grade = %s WHERE reg_id = %s;"
+    result = execute_dml(update_query, (new_grade, reg_id))
+    
+    if result == "Success":
+        flash(f'Grade successfully updated to {new_grade} for registration ID {reg_id}.', 'success')
+    else:
+        flash(f'Grade update failed due to a database error: {result}', 'danger')
+
+    return redirect(url_for('faculty_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
