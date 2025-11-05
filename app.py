@@ -4,8 +4,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 # --- 1. Database Configuration (CHANGE THESE) ---
 DB_CONFIG = {
     'host': 'localhost',
-    'user': 'your_mysql_user',   # <-- CHANGE ME
-    'password': 'your_mysql_password', # <-- CHANGE ME
+    'user': 'root',   # <-- CHANGE ME
+    'password': 'Rohan@2005', # <-- CHANGE ME
     'database': 'course_registration' # As defined in course_setup.sql
 }
 

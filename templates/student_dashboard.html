@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+<h1>Student Dashboard 🎓</h1>
+
+<div style="background-color: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+    <h2>Welcome, {{ name }}</h2>
+    <p>
+        <strong>Student ID:</strong> {{ session.user_id }} | 
+        <strong>Total Credits:</strong> <span style="font-weight: bold; color: #007bff;">{{ total_credits }}</span> 
+        (Value retrieved via the `total_credits()` Stored Function)
+    </p>
+</div>
+
+<hr>
+
+<h2>📚 Currently Registered Courses (Spring 2025)</h2>
+{% if registered_courses %}
+    <table>
+        <tr>
+            <th>Course Title</th>
+            <th>Credits</th>
+            <th>Semester</th>
+            <th>Grade</th>
+            <th>Status</th>
+        </tr>
+        {% for course in registered_courses %}
+        <tr>
+            <td>{{ course.title }}</td>
+            <td>{{ course.credits }}</td>
+            <td>{{ course.semester }}</td>
+            <td>{{ course.grade if course.grade else 'In Progress' }}</td>
+            <td>
+                {% if course.grade %}
+                    <span style="color: green; font-weight: bold;">Completed</span>
+                {% else %}
+                    <span style="color: orange;">Active</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>You have not registered for any courses yet. Start with the section below!</p>
+{% endif %}
+
+<hr>
+
+<h2>➕ Available Courses for Registration</h2>
+<p>
+    Use the Register button below to enroll. **This action demonstrates the `check_capacity_before_registration` trigger.**
+</p>
+{% if available_courses %}
+    <table>
+        <tr>
+            <th>Course ID</th>
+            <th>Title</th>
+            <th>Credits</th>
+            <th>Faculty-in-Charge</th>
+            <th>Semester</th>
+            <th>Capacity</th>
+            <th>Action</th>
+        </tr>
+        {% for course in available_courses %}
+        <tr>
+            <td>{{ course.course_id }}</td>
+            <td>{{ course.title }}</td>
+            <td>{{ course.credits }}</td>
+            <td>{{ course.faculty_name }}</td>
+            <td><span style="background-color: #d1ecf1; padding: 3px 6px; border-radius: 3px;">{{ course.semester_name }}</span></td>
+            <td>Max: {{ course.max_capacity }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('register_course', course_id=course.course_id) }}">
+                    <button type="submit" class="register-btn">Register</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>No new courses are currently available for registration.</p>
+{% endif %}
+
+{% endblock %}

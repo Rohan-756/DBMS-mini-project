@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to the Online Course Registration System</h1>
+<p>
+    This simplified interface allows you to select a user to simulate login.
+    <br>
+    **Try logging in as Student ID 1 (Rohan Suresh) and register for a course to test the system!**
+</p>
+
+<h2>User Selection</h2>
+
+<form method="POST">
+    <label for="role">Select Role:</label>
+    <select name="role" id="role" required onchange="updateUserList()">
+        <option value="">-- Select --</option>
+        <option value="student">Student</option>
+        <option value="faculty">Faculty</option>
+    </select>
+
+    <br><br>
+
+    <label for="user_id">Select User:</label>
+    <select name="user_id" id="user_id" required>
+        <option value="">-- Select Role First --</option>
+    </select>
+    
+    <br><br>
+    
+    <button type="submit" class="register-btn">Log In</button>
+</form>
+
+<script>
+    const students = {{ students|tojson }};
+    const faculty = {{ faculty|tojson }};
+
+    function updateUserList() {
+        const role = document.getElementById('role').value;
+        const userSelect = document.getElementById('user_id');
+        userSelect.innerHTML = ''; // Clear existing options
+        
+        let users = [];
+        let id_key = '';
+        let name_key = 'name';
+
+        if (role === 'student') {
+            users = students;
+            id_key = 'student_id';
+        } else if (role === 'faculty') {
+            users = faculty;
+            id_key = 'faculty_id';
+        }
+        
+        if (users.length > 0) {
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user[id_key];
+                option.textContent = `ID ${user[id_key]} - ${user[name_key]}`;
+                userSelect.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- No Users Found --';
+            userSelect.appendChild(option);
+        }
+    }
+</script>
+
+{% endblock %}
