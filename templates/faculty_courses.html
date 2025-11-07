@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">My Department Courses</h1>
+
+<div class="bg-white ring-1 ring-slate-200 rounded-lg p-4 mb-6">
+  <h2 class="text-lg font-medium mb-3">Create New Course</h2>
+  <form method="POST" action="{{ url_for('faculty_course_create') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <input name="title" type="text" placeholder="Course title" class="rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2" required>
+    <input name="credits" type="number" min="1" max="10" placeholder="Credits" class="rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2" required>
+    <button type="submit" class="rounded-md bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition">Create</button>
+  </form>
+</div>
+
+<div class="bg-white ring-1 ring-slate-200 rounded-lg overflow-hidden">
+  <table class="min-w-full">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">ID</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Title</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Credits</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for c in courses %}
+      <tr>
+        <td class="px-4 py-2">{{ c.course_id }}</td>
+        <td class="px-4 py-2">{{ c.title }}</td>
+        <td class="px-4 py-2">{{ c.credits }}</td>
+        <td class="px-4 py-2 flex items-center gap-2">
+          <a href="{{ url_for('faculty_course_prereqs', course_id=c.course_id) }}" class="px-3 py-1.5 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition">Manage Prereqs</a>
+          <form method="POST" action="{{ url_for('faculty_course_delete', course_id=c.course_id) }}" onsubmit="return confirm('Delete this course? This cannot be undone.');">
+            <button type="submit" class="px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-700 transition">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not courses %}
+      <tr><td class="px-4 py-6 text-center text-slate-500" colspan="4">No courses found in your department.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('faculty_dashboard') }}" class="text-slate-500 hover:text-slate-700">Back to Faculty Dashboard</a>
+</div>
+{% endblock %}

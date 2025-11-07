@@ -96,6 +96,127 @@ def index():
             session['role'] = 'faculty'
             session['user_id'] = int(row['faculty_id'])
             return redirect(url_for('faculty_dashboard'))
+
+# ---- Faculty Course Management ----
+def _faculty_dept_id(faculty_id:int):
+    row = fetch_one("SELECT dept_id FROM FACULTY WHERE faculty_id=%s", (faculty_id,))
+    return row['dept_id'] if row else None
+
+@app.route('/faculty/courses')
+def faculty_courses():
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    fid = session.get('user_id')
+    dept_id = _faculty_dept_id(fid)
+    if not dept_id:
+        flash('Department not found for faculty.', 'danger')
+        return redirect(url_for('faculty_dashboard'))
+    courses = fetch_all("SELECT course_id, title, credits FROM COURSE WHERE dept_id=%s ORDER BY course_id", (dept_id,))
+    return render_template('faculty_courses.html', courses=courses)
+
+@app.route('/faculty/course/create', methods=['POST'])
+def faculty_course_create():
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    title = (request.form.get('title') or '').strip()
+    credits = request.form.get('credits')
+    if not title or not credits:
+        flash('Provide title and credits.', 'danger')
+        return redirect(url_for('faculty_courses'))
+    fid = session.get('user_id')
+    dept_id = _faculty_dept_id(fid)
+    err = execute_dml("INSERT INTO COURSE (title, credits, dept_id) VALUES (%s,%s,%s)", (title, int(credits), int(dept_id)))
+    if err:
+        flash(err, 'danger')
+    else:
+        flash('Course created.', 'success')
+    return redirect(url_for('faculty_courses'))
+
+@app.route('/faculty/course/delete/<int:course_id>', methods=['POST'])
+def faculty_course_delete(course_id:int):
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    # Prevent deletion if offerings exist
+    row = fetch_one("SELECT COUNT(*) AS c FROM OFFERING WHERE course_id=%s", (course_id,))
+    if row and row['c'] > 0:
+        flash('Cannot delete: offerings exist for this course.', 'danger')
+        return redirect(url_for('faculty_courses'))
+    # Safe to delete prerequisites then course
+    err = execute_dml("DELETE FROM PREREQUISITE WHERE course_id=%s OR prereq_course_id=%s", (course_id, course_id))
+    if err:
+        flash(err, 'danger')
+        return redirect(url_for('faculty_courses'))
+    err = execute_dml("DELETE FROM COURSE WHERE course_id=%s", (course_id,))
+    if err:
+        flash(err, 'danger')
+    else:
+        flash('Course removed.', 'success')
+    return redirect(url_for('faculty_courses'))
+
+@app.route('/faculty/course/<int:course_id>/prereqs')
+def faculty_course_prereqs(course_id:int):
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    # Fetch course and its prereqs
+    course = fetch_one("SELECT course_id, title FROM COURSE WHERE course_id=%s", (course_id,))
+    if not course:
+        flash('Course not found.', 'danger')
+        return redirect(url_for('faculty_courses'))
+    current = fetch_all(
+        """
+        SELECT p.prereq_course_id AS course_id, c.title
+        FROM PREREQUISITE p JOIN COURSE c ON c.course_id = p.prereq_course_id
+        WHERE p.course_id=%s ORDER BY c.title
+        """, (course_id,)
+    )
+    # candidates: same department courses excluding itself and already chosen
+    fid = session.get('user_id')
+    dept_id = _faculty_dept_id(fid)
+    cand = fetch_all(
+        """
+        SELECT course_id, title FROM COURSE
+        WHERE dept_id=%s AND course_id<>%s
+          AND course_id NOT IN (SELECT prereq_course_id FROM PREREQUISITE WHERE course_id=%s)
+        ORDER BY title
+        """, (dept_id, course_id, course_id)
+    )
+    return render_template('faculty_prereqs.html', course=course, current=current, candidates=cand)
+
+@app.route('/faculty/course/<int:course_id>/prereqs/add', methods=['POST'])
+def faculty_course_prereq_add(course_id:int):
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    prereq_id = request.form.get('prereq_course_id')
+    if not prereq_id:
+        flash('Select a prerequisite course.', 'danger')
+        return redirect(url_for('faculty_course_prereqs', course_id=course_id))
+    err = execute_dml("INSERT INTO PREREQUISITE (course_id, prereq_course_id) VALUES (%s,%s)", (course_id, int(prereq_id)))
+    if err:
+        flash(err, 'danger')
+    else:
+        flash('Prerequisite added.', 'success')
+    return redirect(url_for('faculty_course_prereqs', course_id=course_id))
+
+@app.route('/faculty/course/<int:course_id>/prereqs/remove', methods=['POST'])
+def faculty_course_prereq_remove(course_id:int):
+    if session.get('role') != 'faculty':
+        flash('Please log in as faculty.', 'danger')
+        return redirect(url_for('index'))
+    prereq_id = request.form.get('prereq_course_id')
+    if not prereq_id:
+        flash('Select a prerequisite to remove.', 'danger')
+        return redirect(url_for('faculty_course_prereqs', course_id=course_id))
+    err = execute_dml("DELETE FROM PREREQUISITE WHERE course_id=%s AND prereq_course_id=%s", (course_id, int(prereq_id)))
+    if err:
+        flash(err, 'danger')
+    else:
+        flash('Prerequisite removed.', 'success')
+    return redirect(url_for('faculty_course_prereqs', course_id=course_id))
         flash('Mapped account has no linked profile.', 'danger')
         return redirect(url_for('index'))
 
@@ -337,7 +458,6 @@ def faculty_dashboard():
 def update_grade():
     if session.get('role') != 'faculty':
         flash('Unauthorized.', 'danger')
-        return redirect(url_for('index'))
     reg_id = request.form.get('reg_id')
     grade = (request.form.get('grade') or '').strip().upper()
     if not reg_id or not grade:
