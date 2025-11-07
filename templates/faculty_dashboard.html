@@ -1,65 +1,74 @@
 {% extends "base.html" %}
 
 {% block content %}
-<a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-<h1>Faculty Dashboard 🧑‍🏫</h1>
+<h1 class="text-2xl font-semibold mb-4">Faculty Dashboard 🧑‍🏫</h1>
 
-<div style="background-color: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-    <h2>Welcome, {{ name }}</h2>
-    <p>
-        <strong>Faculty ID:</strong> {{ session.user_id }} | 
-        <strong>Actions:</strong> View enrolled students and assign/update grades.
-    </p>
+<div class="bg-white ring-1 ring-slate-200 rounded-lg p-4 mb-6">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-lg font-medium">Welcome, {{ name }}</h2>
+      <p class="text-sm text-slate-500">Faculty ID: {{ session.user_id }}</p>
+    </div>
+    <p class="text-sm text-slate-600">View enrolled students and assign/update grades</p>
+  </div>
 </div>
 
-<hr>
-
-<h2>📋 My Offered Courses & Enrollment</h2>
+<h2 class="text-xl font-semibold">📋 My Offered Courses & Enrollment</h2>
 
 {% if courses_data %}
-    {% for course_key, enrollments in courses_data.items() %}
-        {% set title = course_key[0] %}
-        {% set section = course_key[1] %}
-        {% set semester = course_key[2] %}
+  <div class="mt-4 space-y-4">
+  {% for course_key, enrollments in courses_data.items() %}
+    {% set title = course_key[0] %}
+    {% set section = course_key[1] %}
+    {% set semester = course_key[2] %}
 
-        <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 25px; border-radius: 5px;">
-            <h3>{{ title }} (Section {{ section }} - {{ semester }})</h3>
-            
-            {% if enrollments %}
-                <p>Total Enrolled Students: **{{ enrollments|length }}**</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Student Name</th>
-                            <th>Current Grade</th>
-                            <th>Action: Set New Grade</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in enrollments %}
-                            <tr>
-                                <td>{{ student.student_id }}</td>
-                                <td>{{ student.student_name }}</td>
-                                <td><span style="font-weight: bold;">{{ student.grade if student.grade else 'N/A' }}</span></td>
-                                <td>
-                                    <form method="POST" action="{{ url_for('update_grade') }}" style="display: flex; gap: 10px; align-items: center;">
-                                        <input type="hidden" name="reg_id" value="{{ student.reg_id }}">
-                                        <input type="text" name="grade" placeholder="Enter Grade (e.g., A+)" required style="padding: 5px; width: 150px;">
-                                        <button type="submit" class="register-btn" style="background-color: #007bff;">Update</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p style="color: gray;">No students are currently registered for this course offering.</p>
-            {% endif %}
+    <details class="bg-white ring-1 ring-slate-200 rounded-lg">
+      <summary class="cursor-pointer select-none px-4 py-3 flex items-center justify-between">
+        <div>
+          <span class="font-medium">{{ title }}</span>
+          <span class="text-slate-500">— Section {{ section }} · {{ semester }}</span>
         </div>
-    {% endfor %}
+        <span class="text-sm text-slate-500">{{ enrollments|length }} student(s)</span>
+      </summary>
+      <div class="px-4 pb-4">
+        {% if enrollments %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full bg-white ring-1 ring-slate-200 rounded-md overflow-hidden">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Student ID</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Student Name</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Current Grade</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Set Grade</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for student in enrollments %}
+              <tr>
+                <td class="px-3 py-2">{{ student.student_id }}</td>
+                <td class="px-3 py-2">{{ student.student_name }}</td>
+                <td class="px-3 py-2">{{ student.grade if student.grade else 'N/A' }}</td>
+                <td class="px-3 py-2">
+                  <form method="POST" action="{{ url_for('update_grade') }}" class="flex items-center gap-2">
+                    <input type="hidden" name="reg_id" value="{{ student.reg_id }}">
+                    <input type="text" name="grade" placeholder="e.g., A" required class="w-28 rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1">
+                    <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition">Update</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-slate-500">No students are currently registered for this offering.</p>
+        {% endif %}
+      </div>
+    </details>
+  {% endfor %}
+  </div>
 {% else %}
-    <p>You are not currently teaching any courses.</p>
+  <p class="text-slate-600">You are not currently teaching any courses.</p>
 {% endif %}
 
 {% endblock %}

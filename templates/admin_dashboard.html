@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Admin Dashboard 🛠️</h1>
+
+<!-- Metrics -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white ring-1 ring-slate-200 rounded-lg p-4">
+    <div class="text-sm text-slate-500">Students</div>
+    <div class="text-2xl font-semibold">{{ metrics.students }}</div>
+  </div>
+  <div class="bg-white ring-1 ring-slate-200 rounded-lg p-4">
+    <div class="text-sm text-slate-500">Faculty</div>
+    <div class="text-2xl font-semibold">{{ metrics.faculty }}</div>
+  </div>
+  <div class="bg-white ring-1 ring-slate-200 rounded-lg p-4">
+    <div class="text-sm text-slate-500">Offerings</div>
+    <div class="text-2xl font-semibold">{{ metrics.offerings }}</div>
+  </div>
+  <div class="bg-white ring-1 ring-slate-200 rounded-lg p-4">
+    <div class="text-sm text-slate-500">Active Registrations</div>
+    <div class="text-2xl font-semibold">{{ metrics.active_regs }}</div>
+  </div>
+  <div class="bg-white ring-1 ring-slate-200 rounded-lg p-4">
+    <div class="text-sm text-slate-500">Utilization</div>
+    <div class="text-2xl font-semibold">{{ metrics.utilization }}%</div>
+  </div>
+  </div>
+
+<h2 class="text-xl font-semibold">Course Enrollment Summary</h2>
+{% if enrollment %}
+<div class="overflow-x-auto mt-3 mb-6">
+  <table class="min-w-full bg-white ring-1 ring-slate-200 rounded-lg overflow-hidden">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Course Title</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Semester</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Section</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Max Capacity</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Current</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Seats Left</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for row in enrollment %}
+      <tr>
+        <td class="px-4 py-2">{{ row.title }}</td>
+        <td class="px-4 py-2">{{ row.semester_name }}</td>
+        <td class="px-4 py-2">{{ row.section }}</td>
+        <td class="px-4 py-2">{{ row.max_capacity }}</td>
+        <td class="px-4 py-2">{{ row.current_enrollment }}</td>
+        <td class="px-4 py-2">{{ row.seats_remaining }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% else %}
+<p class="text-slate-600 mb-6">No offerings found.</p>
+{% endif %}
+
+<h2 class="text-xl font-semibold">Student GPA Report</h2>
+{% if gpa %}
+<div class="overflow-x-auto mt-3">
+  <table class="min-w-full bg-white ring-1 ring-slate-200 rounded-lg overflow-hidden">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Student ID</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Student Name</th>
+        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">GPA</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for row in gpa %}
+      <tr>
+        <td class="px-4 py-2">{{ row.student_id }}</td>
+        <td class="px-4 py-2">{{ row.student_name }}</td>
+        <td class="px-4 py-2">{{ row.gpa if row.gpa is not none else 'N/A' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% else %}
+<p class="text-slate-600">No GPA data available.</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="min-h-[70vh] grid place-items-center">
+  <div class="w-full max-w-2xl">
+    <div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden">
+      <div class="px-6 pt-5 border-b border-slate-100">
+        <h1 id="reg-title" class="text-xl font-semibold">Create an Account</h1>
+        <p class="text-sm text-slate-500 mb-4">Fill in your details to register and sign in.</p>
+        <div class="flex gap-2">
+          <button id="btn-student" class="px-3 py-1.5 rounded-md text-sm bg-indigo-600 text-white">Student</button>
+          <button id="btn-faculty" class="px-3 py-1.5 rounded-md text-sm bg-slate-100 text-slate-700">Teacher</button>
+        </div>
+      </div>
+      <form method="POST" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="hidden" id="role" name="role" value="student">
+
+        <!-- Student fields -->
+        <div class="student-field">
+          <label class="block text-sm font-medium text-slate-700" for="first_name">First Name</label>
+          <input id="first_name" name="first_name" type="text" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+        </div>
+        <div class="student-field">
+          <label class="block text-sm font-medium text-slate-700" for="last_name">Last Name</label>
+          <input id="last_name" name="last_name" type="text" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+        </div>
+
+        <!-- Faculty fields -->
+        <div class="faculty-field hidden md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700" for="full_name">Full Name</label>
+          <input id="full_name" name="full_name" type="text" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700" for="email">Email</label>
+          <input id="email" name="email" type="email" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="dept_id">Department</label>
+          <select id="dept_id" name="dept_id" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+            <option value="">-- Select Department --</option>
+            {% for d in depts %}
+              <option value="{{ d.dept_id }}">{{ d.dept_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="student-field">
+          <label class="block text-sm font-medium text-slate-700" for="enrollment_year">Enrollment Year</label>
+          <input id="enrollment_year" name="enrollment_year" type="number" min="2000" max="2100" value="2025" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="username">Username</label>
+          <input id="username" name="username" type="text" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="password">Password</label>
+          <input id="password" name="password" type="password" class="mt-1 w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+        </div>
+        <div class="md:col-span-2 flex items-center justify-between mt-2">
+          <a href="{{ url_for('index') }}" class="text-slate-500 hover:text-slate-700">Back to Sign In</a>
+          <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btnStudent = document.getElementById('btn-student');
+  const btnFaculty = document.getElementById('btn-faculty');
+  const roleInput = document.getElementById('role');
+  const title = document.getElementById('reg-title');
+  const studentFields = document.querySelectorAll('.student-field');
+  const facultyFields = document.querySelectorAll('.faculty-field');
+
+  function setRole(role) {
+    roleInput.value = role;
+    const active = ['bg-indigo-600','text-white'];
+    const inactive = ['bg-slate-100','text-slate-700'];
+    if (role === 'student') {
+      title.textContent = 'Create a Student Account';
+      btnStudent.classList.add(...active); btnStudent.classList.remove(...inactive);
+      btnFaculty.classList.add(...inactive); btnFaculty.classList.remove(...active);
+      studentFields.forEach(el=>{ el.classList.remove('hidden'); el.querySelectorAll('input').forEach(i=>i.required=true); });
+      facultyFields.forEach(el=>{ el.classList.add('hidden'); el.querySelectorAll('input').forEach(i=>i.required=false); });
+    } else {
+      title.textContent = 'Create a Teacher Account';
+      btnFaculty.classList.add(...active); btnFaculty.classList.remove(...inactive);
+      btnStudent.classList.add(...inactive); btnStudent.classList.remove(...active);
+      studentFields.forEach(el=>{ el.classList.add('hidden'); el.querySelectorAll('input').forEach(i=>i.required=false); });
+      facultyFields.forEach(el=>{ el.classList.remove('hidden'); el.querySelectorAll('input').forEach(i=>i.required=true); });
+    }
+  }
+  btnStudent.addEventListener('click', (e)=>{ e.preventDefault(); setRole('student'); });
+  btnFaculty.addEventListener('click', (e)=>{ e.preventDefault(); setRole('faculty'); });
+  // initialize
+  setRole('student');
+</script>
+
+{% endblock %}
