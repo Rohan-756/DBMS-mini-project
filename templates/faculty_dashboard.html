@@ -1,77 +1,165 @@
 {% extends "base.html" %}
 
+{% block title %}Faculty Dashboard - CourseHub{% endblock %}
+
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-2xl font-semibold">Faculty Dashboard 🧑‍🏫</h1>
-  <a href="{{ url_for('faculty_courses') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition">Manage Courses</a>
-  </div>
-
-<div class="bg-white ring-1 ring-slate-200 rounded-lg p-4 mb-6">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h2 class="text-lg font-medium">Welcome, {{ name }}</h2>
-      <p class="text-sm text-slate-500">Faculty ID: {{ session.user_id }}</p>
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-slate-800 mb-2">Welcome, Prof. {{ faculty.last_name }}! 👨‍🏫</h1>
+        <p class="text-slate-600">{{ faculty.dept_name }} Department</p>
     </div>
-    <p class="text-sm text-slate-600">View enrolled students and assign/update grades</p>
-  </div>
-</div>
-
-<h2 class="text-xl font-semibold">📋 My Offered Courses & Enrollment</h2>
-
-{% if courses_data %}
-  <div class="mt-4 space-y-4">
-  {% for course_key, enrollments in courses_data.items() %}
-    {% set title = course_key[0] %}
-    {% set section = course_key[1] %}
-    {% set semester = course_key[2] %}
-
-    <details class="bg-white ring-1 ring-slate-200 rounded-lg">
-      <summary class="cursor-pointer select-none px-4 py-3 flex items-center justify-between">
-        <div>
-          <span class="font-medium">{{ title }}</span>
-          <span class="text-slate-500">— Section {{ section }} · {{ semester }}</span>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">Total Courses</p>
+                    <p class="text-4xl font-bold">{{ courses|length }}</p>
+                </div>
+                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+            </div>
         </div>
-        <span class="text-sm text-slate-500">{{ enrollments|length }} student(s)</span>
-      </summary>
-      <div class="px-4 pb-4">
-        {% if enrollments %}
-        <div class="overflow-x-auto">
-          <table class="min-w-full bg-white ring-1 ring-slate-200 rounded-md overflow-hidden">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Student ID</th>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Student Name</th>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Current Grade</th>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-700">Set Grade</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              {% for student in enrollments %}
-              <tr>
-                <td class="px-3 py-2">{{ student.student_id }}</td>
-                <td class="px-3 py-2">{{ student.student_name }}</td>
-                <td class="px-3 py-2">{{ student.grade if student.grade else 'N/A' }}</td>
-                <td class="px-3 py-2">
-                  <form method="POST" action="{{ url_for('update_grade') }}" class="flex items-center gap-2">
-                    <input type="hidden" name="reg_id" value="{{ student.reg_id }}">
-                    <input type="text" name="grade" placeholder="e.g., A" required class="w-28 rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1">
-                    <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition">Update</button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-indigo-100 text-sm font-medium mb-1">Total Students</p>
+                    <p class="text-4xl font-bold">{{ courses|sum(attribute='enrolled_count') }}</p>
+                </div>
+                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm font-medium mb-1">Avg. Enrollment</p>
+                    <p class="text-4xl font-bold">
+                        {% if courses|length > 0 %}
+                        {{ "%.1f"|format(courses|sum(attribute='enrolled_count') / courses|length) }}
+                        {% else %}
+                        0
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- My Courses -->
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-4">My Courses</h2>
+        {% if courses %}
+        <div class="space-y-6">
+            {% for course in courses %}
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-1">{{ course.title }}</h3>
+                            <p class="text-blue-100">{{ course.course_id }} • {{ course.semester }} • Section {{ course.section }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-blue-100 mb-1">Enrollment</p>
+                            <p class="text-2xl font-bold">{{ course.enrolled_count }}/{{ course.max_capacity }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    {% if course.students %}
+                    <h4 class="font-bold text-slate-800 mb-4">Enrolled Students ({{ course.students|length }})</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b-2 border-slate-200">
+                                    <th class="text-left py-3 px-4 font-bold text-slate-700">Student Name</th>
+                                    <th class="text-left py-3 px-4 font-bold text-slate-700">Email</th>
+                                    <th class="text-left py-3 px-4 font-bold text-slate-700">Current Grade</th>
+                                    <th class="text-left py-3 px-4 font-bold text-slate-700">Update Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in course.students %}
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold">
+                                                {{ student.student_name.split()[0][0] }}{{ student.student_name.split()[1][0] if student.student_name.split()|length > 1 else '' }}
+                                            </div>
+                                            <span class="font-medium text-slate-800">{{ student.student_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-600">{{ student.email }}</td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-3 py-1 rounded-full text-sm font-bold {% if student.grade == 'A' or student.grade == 'A+' %}bg-emerald-100 text-emerald-700{% elif student.grade == 'IP' %}bg-blue-100 text-blue-700{% else %}bg-slate-100 text-slate-700{% endif %}">
+                                            {{ student.grade }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <form method="POST" action="{{ url_for('update_grade', enrollment_id=student.enrollment_id) }}" class="flex items-center gap-2">
+                                            <select name="grade" class="px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                                                <option value="IP" {% if student.grade == 'IP' %}selected{% endif %}>IP</option>
+                                                <option value="A+" {% if student.grade == 'A+' %}selected{% endif %}>A+</option>
+                                                <option value="A" {% if student.grade == 'A' %}selected{% endif %}>A</option>
+                                                <option value="A-" {% if student.grade == 'A-' %}selected{% endif %}>A-</option>
+                                                <option value="B+" {% if student.grade == 'B+' %}selected{% endif %}>B+</option>
+                                                <option value="B" {% if student.grade == 'B' %}selected{% endif %}>B</option>
+                                                <option value="B-" {% if student.grade == 'B-' %}selected{% endif %}>B-</option>
+                                                <option value="C+" {% if student.grade == 'C+' %}selected{% endif %}>C+</option>
+                                                <option value="C" {% if student.grade == 'C' %}selected{% endif %}>C</option>
+                                                <option value="C-" {% if student.grade == 'C-' %}selected{% endif %}>C-</option>
+                                                <option value="D" {% if student.grade == 'D' %}selected{% endif %}>D</option>
+                                                <option value="F" {% if student.grade == 'F' %}selected{% endif %}>F</option>
+                                            </select>
+                                            <button type="submit" class="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition text-sm">
+                                                Update
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <p class="text-slate-500">No students enrolled yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
         </div>
         {% else %}
-          <p class="text-slate-500">No students are currently registered for this offering.</p>
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 text-center">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            <p class="text-slate-500 text-lg mb-4">You haven't created any courses yet</p>
+            <a href="{{ url_for('faculty_courses') }}" class="inline-block px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition">
+                Create Your First Course
+            </a>
+        </div>
         {% endif %}
-      </div>
-    </details>
-  {% endfor %}
-  </div>
-{% else %}
-  <p class="text-slate-600">You are not currently teaching any courses.</p>
-{% endif %}
-
+    </div>
+</div>
 {% endblock %}

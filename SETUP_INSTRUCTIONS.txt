@@ -1,0 +1,86 @@
+========================================
+CourseHub - Quick Setup Instructions
+========================================
+
+STEP 1: Install Database
+-------------------------
+Open MySQL and run:
+
+mysql -u root -p
+[Enter your password]
+
+Then run:
+source d:\DBMS-mini-project\setup_database.sql
+exit
+
+
+STEP 2: Install Database Objects
+---------------------------------
+mysql -u root -p course_registration < d:\DBMS-mini-project\database_objects.sql
+
+
+STEP 3: Update Database Credentials
+------------------------------------
+Edit app.py (lines 11-16) with your MySQL password:
+
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'YOUR_PASSWORD_HERE',  <-- Change this
+    'database': 'course_registration'
+}
+
+
+STEP 4: Run the Application
+----------------------------
+python app.py
+
+
+STEP 5: Access the Application
+-------------------------------
+Open browser: http://127.0.0.1:5000
+
+
+DEFAULT LOGIN CREDENTIALS
+==========================
+Password for all accounts: password
+
+Students:
+- awilliams (Alice Williams - Computer Science)
+- bmartinez (Bob Martinez - Computer Science)
+- cgarcia (Carol Garcia - Mathematics)
+
+Faculty:
+- jsmith (John Smith - Computer Science)
+- sjohnson (Sarah Johnson - Computer Science)
+- mbrown (Michael Brown - Mathematics)
+- edavis (Emily Davis - Physics)
+
+
+FEATURES ADDED
+==============
+✓ GPA Calculation (using database function)
+✓ Enrollment Validation (using stored procedure)
+✓ Grade Update Logging (using triggers)
+✓ Capacity Checking (using triggers)
+✓ Audit Trail (ENROLLMENT_HISTORY table)
+✓ Performance Views (student_performance, course_enrollment_summary, faculty_teaching_load)
+
+
+TROUBLESHOOTING
+===============
+If you get "Access denied" error:
+- Check your MySQL password in app.py
+
+If database objects fail to install:
+- Make sure you ran setup_database.sql first
+- Make sure you're in the course_registration database
+
+If Flask won't start:
+- Make sure Flask is installed: pip install flask mysql-connector-python
+- Check if port 5000 is already in use
+
+
+For detailed documentation, see:
+- README.md - General overview
+- DATABASE_OBJECTS.md - Database functions, procedures, triggers documentation

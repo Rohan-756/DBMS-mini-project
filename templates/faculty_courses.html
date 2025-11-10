@@ -1,49 +1,108 @@
 {% extends "base.html" %}
 
+{% block title %}Manage Courses - CourseHub{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">My Department Courses</h1>
-
-<div class="bg-white ring-1 ring-slate-200 rounded-lg p-4 mb-6">
-  <h2 class="text-lg font-medium mb-3">Create New Course</h2>
-  <form method="POST" action="{{ url_for('faculty_course_create') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-    <input name="title" type="text" placeholder="Course title" class="rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2" required>
-    <input name="credits" type="number" min="1" max="10" placeholder="Credits" class="rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2" required>
-    <button type="submit" class="rounded-md bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition">Create</button>
-  </form>
-</div>
-
-<div class="bg-white ring-1 ring-slate-200 rounded-lg overflow-hidden">
-  <table class="min-w-full">
-    <thead class="bg-slate-50">
-      <tr>
-        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">ID</th>
-        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Title</th>
-        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Credits</th>
-        <th class="px-4 py-2 text-left text-sm font-semibold text-slate-700">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-100">
-      {% for c in courses %}
-      <tr>
-        <td class="px-4 py-2">{{ c.course_id }}</td>
-        <td class="px-4 py-2">{{ c.title }}</td>
-        <td class="px-4 py-2">{{ c.credits }}</td>
-        <td class="px-4 py-2 flex items-center gap-2">
-          <a href="{{ url_for('faculty_course_prereqs', course_id=c.course_id) }}" class="px-3 py-1.5 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition">Manage Prereqs</a>
-          <form method="POST" action="{{ url_for('faculty_course_delete', course_id=c.course_id) }}" onsubmit="return confirm('Delete this course? This cannot be undone.');">
-            <button type="submit" class="px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-700 transition">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-      {% if not courses %}
-      <tr><td class="px-4 py-6 text-center text-slate-500" colspan="4">No courses found in your department.</td></tr>
-      {% endif %}
-    </tbody>
-  </table>
-</div>
-
-<div class="mt-4">
-  <a href="{{ url_for('faculty_dashboard') }}" class="text-slate-500 hover:text-slate-700">Back to Faculty Dashboard</a>
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-slate-800 mb-2">Manage Courses</h1>
+        <p class="text-slate-600">Create and manage your course offerings</p>
+    </div>
+    
+    <!-- Create Course Form -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 mb-8">
+        <h2 class="text-2xl font-bold text-slate-800 mb-6">Create New Course</h2>
+        <form method="POST" action="{{ url_for('create_course') }}" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="title" class="block text-sm font-bold text-slate-700 mb-2">Course Title</label>
+                    <input type="text" id="title" name="title" required
+                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none"
+                           placeholder="e.g., Introduction to Programming">
+                </div>
+                
+                <div>
+                    <label for="credits" class="block text-sm font-bold text-slate-700 mb-2">Credits</label>
+                    <input type="number" id="credits" name="credits" min="1" max="6" required
+                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none"
+                           placeholder="3">
+                </div>
+                
+                <div>
+                    <label for="semester" class="block text-sm font-bold text-slate-700 mb-2">Semester</label>
+                    <select id="semester" name="semester" required
+                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none">
+                        <option value="">Select Semester</option>
+                        <option value="Fall 2024">Fall 2024</option>
+                        <option value="Spring 2025">Spring 2025</option>
+                        <option value="Summer 2025">Summer 2025</option>
+                        <option value="Fall 2025">Fall 2025</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="section" class="block text-sm font-bold text-slate-700 mb-2">Section</label>
+                    <input type="text" id="section" name="section" required
+                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none"
+                           placeholder="A">
+                </div>
+                
+                <div>
+                    <label for="max_capacity" class="block text-sm font-bold text-slate-700 mb-2">Max Capacity</label>
+                    <input type="number" id="max_capacity" name="max_capacity" min="1" max="100" required
+                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none"
+                           placeholder="30">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="description" class="block text-sm font-bold text-slate-700 mb-2">Description (Optional)</label>
+                    <textarea id="description" name="description" rows="3"
+                              class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition outline-none"
+                              placeholder="Brief description of the course..."></textarea>
+                </div>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
+                Create Course & Offering
+            </button>
+        </form>
+    </div>
+    
+    <!-- Existing Courses -->
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-4">Department Courses</h2>
+        {% if courses %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for course in courses %}
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden hover:shadow-xl transition">
+                <div class="bg-gradient-to-r from-slate-700 to-slate-800 p-4 text-white">
+                    <h3 class="text-lg font-bold">{{ course.title }}</h3>
+                    <p class="text-slate-300 text-sm">{{ course.course_id }}</p>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Credits</span>
+                            <span class="font-bold text-slate-800">{{ course.credits }}</span>
+                        </div>
+                        {% if course.description %}
+                        <p class="text-sm text-slate-600 line-clamp-3">{{ course.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 text-center">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            <p class="text-slate-500 text-lg">No courses in your department yet</p>
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
