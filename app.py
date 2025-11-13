@@ -186,10 +186,36 @@ def student_dashboard():
     # Calculate total credits
     total_credits = sum(course['credits'] for course in enrolled_courses if course['grade'] != 'W')
     
-    # Use function to calculate GPA
-    cursor.execute("SELECT calculate_gpa(%s) as gpa", (session['user_id'],))
-    gpa_result = cursor.fetchone()
-    gpa = gpa_result['gpa'] if gpa_result else 0.0
+    # Calculate GPA manually (fallback if function doesn't exist)
+    try:
+        cursor.execute("SELECT calculate_gpa(%s) as gpa", (session['user_id'],))
+        gpa_result = cursor.fetchone()
+        gpa = gpa_result['gpa'] if gpa_result else 0.0
+    except mysql.connector.Error:
+        # Fallback GPA calculation
+        cursor.execute("""
+            SELECT AVG(
+                CASE grade
+                    WHEN 'A+' THEN 4.0
+                    WHEN 'A' THEN 4.0
+                    WHEN 'A-' THEN 3.7
+                    WHEN 'B+' THEN 3.3
+                    WHEN 'B' THEN 3.0
+                    WHEN 'B-' THEN 2.7
+                    WHEN 'C+' THEN 2.3
+                    WHEN 'C' THEN 2.0
+                    WHEN 'C-' THEN 1.7
+                    WHEN 'D' THEN 1.0
+                    WHEN 'F' THEN 0.0
+                    ELSE NULL
+                END
+            ) as gpa
+            FROM ENROLLMENT
+            WHERE student_id = %s 
+            AND grade NOT IN ('IP', 'W')
+        """, (session['user_id'],))
+        gpa_result = cursor.fetchone()
+        gpa = gpa_result['gpa'] if gpa_result and gpa_result['gpa'] else 0.0
     
     cursor.close()
     conn.close()
@@ -211,19 +237,53 @@ def enroll_course(offering_id):
     cursor = conn.cursor()
     
     try:
-        # Use stored procedure for enrollment with validation
-        status = cursor.callproc('enroll_student', [session['user_id'], offering_id, ''])
-        conn.commit()
-        
-        # Get the output parameter
-        cursor.execute("SELECT @_enroll_student_2 as status")
-        result = cursor.fetchone()
-        status_msg = result[0] if result else 'Unknown status'
-        
-        if 'SUCCESS' in status_msg:
-            flash('Successfully enrolled in course!', 'success')
-        else:
-            flash(status_msg.replace('ERROR: ', ''), 'danger')
+        # Try using stored procedure first
+        try:
+            status = cursor.callproc('enroll_student', [session['user_id'], offering_id, ''])
+            conn.commit()
+            
+            # Get the output parameter
+            cursor.execute("SELECT @_enroll_student_2 as status")
+            result = cursor.fetchone()
+            status_msg = result[0] if result else 'Unknown status'
+            
+            if status_msg and 'SUCCESS' in status_msg:
+                flash('Successfully enrolled in course!', 'success')
+            else:
+                flash(status_msg.replace('ERROR: ', '') if status_msg else 'Enrollment failed', 'danger')
+        except mysql.connector.Error:
+            # Fallback: Manual enrollment with basic validation
+            # Check if already enrolled
+            cursor.execute("SELECT COUNT(*) FROM ENROLLMENT WHERE student_id = %s AND offering_id = %s", 
+                         (session['user_id'], offering_id))
+            already_enrolled = cursor.fetchone()[0]
+            
+            if already_enrolled > 0:
+                flash('Already enrolled in this course', 'danger')
+            else:
+                # Check capacity - get offering info first
+                cursor.execute("SELECT max_capacity FROM OFFERING WHERE offering_id = %s", (offering_id,))
+                offering_result = cursor.fetchone()
+                
+                if offering_result:
+                    max_capacity = offering_result[0]
+                    
+                    # Count current enrollments
+                    cursor.execute("SELECT COUNT(*) FROM ENROLLMENT WHERE offering_id = %s", (offering_id,))
+                    enrolled_count = cursor.fetchone()[0]
+                    
+                    if enrolled_count >= max_capacity:
+                        flash('Course is full', 'danger')
+                    else:
+                        # Enroll the student
+                        cursor.execute("""
+                            INSERT INTO ENROLLMENT (student_id, offering_id, enrollment_date, grade)
+                            VALUES (%s, %s, CURDATE(), 'IP')
+                        """, (session['user_id'], offering_id))
+                        conn.commit()
+                        flash('Successfully enrolled in course!', 'success')
+                else:
+                    flash('Course not found', 'danger')
     except mysql.connector.Error as err:
         flash(f'Enrollment failed: {err}', 'danger')
     
@@ -381,19 +441,30 @@ def update_grade(enrollment_id):
     cursor = conn.cursor()
     
     try:
-        # Use stored procedure for grade update with validation
-        cursor.callproc('update_student_grade', [enrollment_id, grade, ''])
-        conn.commit()
-        
-        # Get the output parameter
-        cursor.execute("SELECT @_update_student_grade_2 as status")
-        result = cursor.fetchone()
-        status_msg = result[0] if result else 'Unknown status'
-        
-        if 'SUCCESS' in status_msg:
-            flash('Grade updated successfully!', 'success')
-        else:
-            flash(status_msg.replace('ERROR: ', ''), 'danger')
+        # Try using stored procedure first
+        try:
+            cursor.callproc('update_student_grade', [enrollment_id, grade, ''])
+            conn.commit()
+            
+            # Get the output parameter
+            cursor.execute("SELECT @_update_student_grade_2 as status")
+            result = cursor.fetchone()
+            status_msg = result[0] if result else 'Unknown status'
+            
+            if status_msg and 'SUCCESS' in status_msg:
+                flash('Grade updated successfully!', 'success')
+            else:
+                flash(status_msg.replace('ERROR: ', '') if status_msg else 'Grade update failed', 'danger')
+        except mysql.connector.Error:
+            # Fallback: Direct grade update
+            valid_grades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'IP', 'W']
+            if grade in valid_grades:
+                cursor.execute("UPDATE ENROLLMENT SET grade = %s WHERE enrollment_id = %s", 
+                             (grade, enrollment_id))
+                conn.commit()
+                flash('Grade updated successfully!', 'success')
+            else:
+                flash('Invalid grade', 'danger')
     except mysql.connector.Error as err:
         flash(f'Failed to update grade: {err}', 'danger')
     
