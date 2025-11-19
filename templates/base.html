@@ -9,6 +9,51 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Flash message animations */
+        @keyframes slide-in-bounce {
+            0% {
+                transform: translateX(100%) scale(0.8);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(-10px) scale(1.05);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slide-out {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100%) scale(0.8);
+                opacity: 0;
+            }
+        }
+        
+        .animate-slide-in-bounce {
+            animation: slide-in-bounce 0.6s ease-out forwards;
+        }
+        
+        .animate-slide-out {
+            animation: slide-out 0.4s ease-in forwards;
+        }
+        
+        .flash-message {
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .flash-message:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.06);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
@@ -79,30 +124,23 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="{% if session.role %}ml-64{% endif %} fixed top-4 right-4 z-40 space-y-2 max-w-md">
+            <div id="flash-container" class="{% if session.role %}ml-64{% endif %} fixed top-4 right-4 z-50 space-y-3 max-w-sm">
                 {% for category, message in messages %}
-                    {% if category == 'success' %}
-                        <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 px-5 py-4 rounded-lg shadow-lg flex items-start gap-3 animate-slide-in">
-                            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="flex-1">{{ message }}</span>
+                    <!-- Always display as success style regardless of actual category -->
+                    <div class="flash-message bg-gradient-to-r from-emerald-500 to-green-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-start gap-3 transform transition-all duration-500 ease-out animate-slide-in-bounce border border-emerald-400" data-category="success">
+                        <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="font-bold text-sm">Success!</div>
+                            <div class="text-sm opacity-90">{{ message }}</div>
                         </div>
-                    {% elif category == 'danger' %}
-                        <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-800 px-5 py-4 rounded-lg shadow-lg flex items-start gap-3 animate-slide-in">
-                            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        <button onclick="dismissFlash(this)" class="text-white hover:text-emerald-200 transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="flex-1">{{ message }}</span>
-                        </div>
-                    {% else %}
-                        <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 px-5 py-4 rounded-lg shadow-lg flex items-start gap-3 animate-slide-in">
-                            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="flex-1">{{ message }}</span>
-                        </div>
-                    {% endif %}
+                        </button>
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}
@@ -112,6 +150,72 @@
     <main class="{% if session.role %}ml-64{% endif %} min-h-screen">
         {% block content %}{% endblock %}
     </main>
+    
+    <script>
+        // Flash message functionality
+        function dismissFlash(button) {
+            const flashMessage = button.closest('.flash-message');
+            flashMessage.classList.remove('animate-slide-in-bounce');
+            flashMessage.classList.add('animate-slide-out');
+            
+            setTimeout(() => {
+                flashMessage.remove();
+            }, 400);
+        }
+        
+        // Auto-dismiss flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            
+            flashMessages.forEach((message, index) => {
+                // All messages are now treated as success messages with 4 second dismiss time
+                const dismissTime = 4000;
+                
+                // Stagger the auto-dismiss for multiple messages
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.classList.remove('animate-slide-in-bounce');
+                        message.classList.add('animate-slide-out');
+                        
+                        setTimeout(() => {
+                            if (message.parentNode) {
+                                message.remove();
+                            }
+                        }, 400);
+                    }
+                }, dismissTime + (index * 500)); // Stagger by 500ms for each message
+            });
+        });
+        
+        // Add progress bar for auto-dismiss
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            
+            flashMessages.forEach((message, index) => {
+                // All messages now use 4 second dismiss time
+                const dismissTime = 4000;
+                
+                // Create progress bar
+                const progressBar = document.createElement('div');
+                progressBar.className = 'absolute bottom-0 left-0 h-1 bg-white bg-opacity-30 rounded-b-xl';
+                progressBar.style.width = '100%';
+                progressBar.style.animation = `shrink ${dismissTime}ms linear forwards`;
+                
+                message.style.position = 'relative';
+                message.appendChild(progressBar);
+            });
+        });
+        
+        // Add shrink animation for progress bar
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shrink {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
     
 </body>
 </html>
